@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { parseTicketFromText } from '@/lib/gemini';
 import { createTicket } from '@/lib/tickets';
 
+export const dynamic = 'force-dynamic';
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 
 /**
