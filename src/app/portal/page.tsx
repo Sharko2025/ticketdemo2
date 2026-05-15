@@ -9,6 +9,7 @@ import {
   FileText, 
   AlertTriangle 
 } from 'lucide-react';
+import { createTicket } from '@/lib/tickets';
 
 export default function PortalPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
@@ -19,14 +20,25 @@ export default function PortalPage() {
     reporter: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await createTicket({
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority as any,
+        reporter: formData.reporter,
+        status: 'New',
+        source: 'Web',
+      });
       setStatus('success');
-    }, 2000);
+    } catch (error) {
+      console.error('Failed to submit ticket:', error);
+      alert('Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.');
+      setStatus('idle');
+    }
   };
 
   if (status === 'success') {
