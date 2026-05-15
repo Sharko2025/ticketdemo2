@@ -10,6 +10,7 @@ import {
   Clock, 
   CheckCircle2, 
   ChevronRight,
+  ChevronLeft,
   RefreshCcw
 } from 'lucide-react';
 
@@ -39,8 +40,6 @@ export default function DashboardPage() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tickets' },
         (payload) => {
-          console.log('Realtime change received:', payload);
-          
           if (payload.eventType === 'INSERT') {
             setTickets((prev) => [payload.new as Ticket, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
@@ -75,11 +74,8 @@ export default function DashboardPage() {
         .eq('id', id);
 
       if (error) throw error;
-      
-      console.log(`Ticket ${id} updated to ${newStatus}`);
     } catch (err) {
       console.error('Failed to update ticket status, rolling back:', err);
-      // Rollback on Error
       setTickets(previousTickets);
       alert('Failed to update status. Please try again.');
     }
@@ -98,7 +94,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
             Agent Dashboard
           </h1>
-          <p className="text-slate-400 mt-1">Real-time support ticket management.</p>
+          <p className="text-slate-400 mt-1 tracking-tight">Real-time support ticket management.</p>
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -130,7 +126,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               
-              <div className="flex flex-col gap-4 min-h-[600px] rounded-xl bg-slate-900/40 p-4 border border-slate-800/30 backdrop-blur-sm">
+              <div className="flex flex-col gap-4 min-h-[600px] rounded-2xl bg-slate-900/40 p-4 border border-slate-800/30 backdrop-blur-md">
                 {tickets
                   .filter((t) => t.status === col.status)
                   .map((ticket) => (
@@ -141,8 +137,8 @@ export default function DashboardPage() {
                     />
                   ))}
                 {tickets.filter(t => t.status === col.status).length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-slate-800 rounded-xl">
-                    <p className="text-slate-600 text-sm italic">No tickets here</p>
+                  <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-slate-800/50 rounded-2xl">
+                    <p className="text-slate-600 text-sm italic">No tickets in this stage</p>
                   </div>
                 )}
               </div>
@@ -168,36 +164,50 @@ function TicketCard({
     Critical: 'bg-red-500/10 text-red-500 border-red-500/20',
   };
 
+  const statusStyles = {
+    'New': 'border-blue-500/20 hover:border-blue-500/50 bg-blue-500/5',
+    'In Progress': 'border-amber-500/20 hover:border-amber-500/50 bg-amber-500/5',
+    'Resolved': 'border-emerald-500/20 hover:border-emerald-500/50 bg-emerald-500/5',
+  };
+
   return (
-    <div className="glass group p-5 rounded-xl border border-slate-800 hover:border-blue-500/40 transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.05)]">
-      <div className="flex justify-between items-start mb-3">
+    <div className={`group p-5 rounded-xl border transition-all duration-300 hover:shadow-lg ${statusStyles[ticket.status]}`}>
+      <div className="flex justify-between items-start mb-4">
         <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${priorityColors[ticket.priority]}`}>
           {ticket.priority}
         </span>
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {ticket.status === 'New' && (
+        
+        {/* Navigation Buttons */}
+        <div className="flex items-center gap-1.5">
+          {ticket.status !== 'New' && (
             <button 
-              onClick={() => onUpdateStatus(ticket.id!, 'In Progress')}
-              className="p-1 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 text-[10px] font-bold"
+              onClick={() => onUpdateStatus(ticket.id!, ticket.status === 'Resolved' ? 'In Progress' : 'New')}
+              title="Move Back"
+              className="p-1.5 rounded-lg bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
             >
-              Start
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
           )}
-          {ticket.status === 'In Progress' && (
+          
+          {ticket.status !== 'Resolved' && (
             <button 
-              onClick={() => onUpdateStatus(ticket.id!, 'Resolved')}
-              className="p-1 rounded bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 text-[10px] font-bold"
+              onClick={() => onUpdateStatus(ticket.id!, ticket.status === 'New' ? 'In Progress' : 'Resolved')}
+              title="Move Forward"
+              className="p-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:text-white hover:bg-blue-600 transition-all flex items-center gap-1"
             >
-              Resolve
+              <span className="text-[10px] font-bold px-1 uppercase tracking-tight">
+                {ticket.status === 'New' ? 'Start' : 'Done'}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
       </div>
       
-      <h3 className="font-semibold text-white mb-2 leading-tight">
+      <h3 className="font-semibold text-white mb-2 leading-tight group-hover:text-white transition-colors">
         {ticket.title}
       </h3>
-      <p className="text-sm text-slate-400 line-clamp-2 mb-4">
+      <p className="text-sm text-slate-400 line-clamp-2 mb-5 leading-relaxed">
         {ticket.description}
       </p>
       
